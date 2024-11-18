@@ -78,6 +78,7 @@ public class Train : MonoBehaviour
             }
         }
         nearestWorldPosition = splineContainer.transform.TransformPoint(currNearestV3);
+        nearestWorldPosition = new UnityEngine.Vector3(nearestWorldPosition.x,nearestWorldPosition.y+0.05f,nearestWorldPosition.z);
         gameObject.transform.position = nearestWorldPosition;
     }
 }
