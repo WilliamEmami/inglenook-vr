@@ -3364,12 +3364,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29ac88bf61b70af488680ee656f235a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  length: 3
-  lastRodTransform: {fileID: 0}
-  list:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  list: []
 --- !u!4 &269891481
 Transform:
   m_ObjectHideFlags: 0
