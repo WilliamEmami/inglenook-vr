@@ -6,11 +6,15 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using Oculus.Interaction;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Unity.VisualScripting;
+using System.Collections.Generic;
 
-public class AbstractTrainCart : MonoBehaviour, TrainCart
+
+public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
 {
     private ConfigurableJoint joint;
-    public float detachForceThreshhold = 500f;
+    public float detachForceThreshhold = 0.1f;
 
     [SerializeField]
     private Grabbable grabbable;
@@ -20,26 +24,25 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart
     private UnityEngine.Vector3 trainPos;
     private ArrayList splines;
     private Spline[] splinesArray;
+    private List<ConfigurableJoint> joints = new List<ConfigurableJoint>();
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         splinesArray = splineContainer.Splines.ToArray();
         Debug.Log(splinesArray[0]);
         //if den har en next: CoupleNext(next)
         //if den har en prev: CouplePrev(prev);
+        
         if (grabbable == null)
         {
             grabbable = GetComponent<Grabbable>();
         }
-    }
-    /* 
-             if (grabbable != null)
-            {
-                grabbable.WhenGrabEnded += OnGrabEnded;
-            } 
-     */
-    private void OnCollisionEnter(Collision collision)
+    
+     
+     }
+    public void OnCollisionEnter(Collision collision)
     {
+        Debug.Log("Collision with: " + collision.gameObject.name);
         /*
         TrainComponent otherComponent = collision.gameObject.GetComponent<TrainComponent>();
         if (otherComponent != null && !IsConnected())
@@ -47,20 +50,35 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart
             CreateJoint(otherComponent.GetComponent<Rigidbody>());
         }
         */
+        AbstractTrainCart otherComponent = collision.gameObject.GetComponentInParent<AbstractTrainCart>();
+        Debug.Log("othercomp is: " + otherComponent);
+        if (otherComponent != null)
+        {
+            Debug.Log("if sats för joints nådd");
+            CreateJoint(otherComponent.GetComponent<Rigidbody>());
+        }
+        else{
+            Debug.Log("if sats ej nådd. isconn: " + IsConnected());
+        }
     }
 
     // Update is called once per frame
-    void Update()
+   public void Update()
+{
+    if (joints.Count > 0)
     {
-        /*
-        if (joint != null && ShouldDetach())
+        for (int i = joints.Count - 1; i >= 0; i--)
         {
-            Detach();
+            if (joints[i] != null && ShouldDetachDistance(joints[i]))
+            {
+                Detach();
+                break; // Exit the loop after detaching one joint
+            }
         }
-        */
     }
+}
 
-    void LateUpdate()
+    public void LateUpdate()
     {
         SnapCartToTrack();
     }
@@ -96,70 +114,121 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart
         Debug.Log(rot.ToString());
         gameObject.transform.position = nearestWorldPosition;
     }
-    private void CreateJoint(Rigidbody connectedBody)
-    {
-        joint = gameObject.AddComponent<ConfigurableJoint>();
-        joint.connectedBody = connectedBody;
-        SetupJointLimits();
-    }
-    private void SetupJointLimits()
-    {
-        joint.xMotion = ConfigurableJointMotion.Limited;
-        joint.yMotion = ConfigurableJointMotion.Limited;
-        joint.zMotion = ConfigurableJointMotion.Limited;
+   private void CreateJoint(Rigidbody connectedBody)
+{
+    ConfigurableJoint newJoint = gameObject.AddComponent<ConfigurableJoint>();
+    newJoint.connectedBody = connectedBody;
+    SetupJointLimits(newJoint);
+    joints.Add(newJoint);
+    Debug.Log("Joint created with: " + connectedBody.name);
+}
+   private void SetupJointLimits(ConfigurableJoint joint)
+{
+    joint.xMotion = ConfigurableJointMotion.Limited;
+    joint.yMotion = ConfigurableJointMotion.Limited;
+    joint.zMotion = ConfigurableJointMotion.Limited;
 
-        joint.angularXMotion = ConfigurableJointMotion.Locked;
-        joint.angularYMotion = ConfigurableJointMotion.Locked;
-        joint.angularZMotion = ConfigurableJointMotion.Locked;
+    joint.angularXMotion = ConfigurableJointMotion.Locked;
+    joint.angularYMotion = ConfigurableJointMotion.Locked;
+    joint.angularZMotion = ConfigurableJointMotion.Locked;
 
-        var spring = joint.linearLimitSpring;
-        spring.spring = 1000f;
-        spring.damper = 50f;
-        joint.linearLimitSpring = spring;
-    }
-    /*
-    private bool ShouldDetach()
+    var spring = joint.linearLimitSpring;
+    spring.spring = 1000f;
+    spring.damper = 50f;
+    joint.linearLimitSpring = spring;
+}
+    
+  /*   private bool ShouldDetach()
     {
         
-        return Vector3.Magnitude(joint.currentForce) > detachForceThreshold;
+      //  return joint != null && Vector3.Magnitude(joint.currentForce) > detachForceThreshhold;
+      if (joint == null) return false;
+        float currentForceMagnitude = Vector3.Magnitude(joint.currentForce);
+        Debug.Log("Current force: " + currentForceMagnitude);
+        return currentForceMagnitude > detachForceThreshhold;
         
-    }
-    */
-    public void Detach()
+    } */
+    private bool ShouldDetachDistance(ConfigurableJoint joint)
+{
+    if (joint == null || joint.connectedBody == null)
+        return false;
+
+    float distance = Vector3.Distance(transform.position, joint.connectedBody.transform.position);
+    Debug.Log($"Distance for joint: {distance}");
+    float distanceThreshold = 3.0f;
+
+    return distance > distanceThreshold;
+}
+    
+   /*  public void Detach()
     {
         if (joint != null)
         {
+            Debug.Log("Detaching Joint...");
             Destroy(joint);
             joint = null;
             // Optionally apply a separating force
             Rigidbody rb = GetComponent<Rigidbody>();
             rb.AddForce(transform.forward * 10f, ForceMode.Impulse);
+            Debug.Log("joint destroy force applied");
         }
-    }
-    public bool IsConnected()
+    } */
+   public void Detach()
+{
+    for (int i = joints.Count - 1; i >= 0; i--)
     {
-        return joint != null && joint.connectedBody != null;
-    }
-    /*
-    private void OnGrabEnded(GrabbableArgs args)
-    {
-        // Check if the cart was thrown with enough force to detach
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (args.GrabData.ThrowVelocity.magnitude > detachForceThreshhold)
+        if (ShouldDetachDistance(joints[i]))
         {
-            Detach();
+            Destroy(joints[i]);
+            joints.RemoveAt(i);
+            Debug.Log($"Joint {i} destroyed due to distance");
         }
+    }
+}
+   public bool IsConnected()
+{
+    return joints.Any(j => j != null && j.connectedBody != null);
+}
+
+    public void BeginTransform()
+    {
+
     }
 
-    private void OnDestroy()
+    public void UpdateTransform()
+{
+    foreach (var joint in joints)
     {
-        if (grabbable != null)
+        if (joint != null && ShouldDetachDistance(joint))
         {
-            grabbable.WhenGrabEnded -= OnGrabEnded;
+            Detach();
+            break; // Exit the loop after detaching one joint
         }
     }
-    */
-    public void SplitTrain()
+}
+
+public void EndTransform()
+{
+    foreach (var joint in joints)
+    {
+        if (ShouldDetachDistance(joint))
+        {
+            Detach();
+            break; // Exit the loop after detaching one joint
+        }
+    }
+}
+        /* Rigidbody rb = GetComponent<Rigidbody>();
+        Debug.Log("rb velocity: " + rb.velocity.magnitude);
+        if (rb.velocity.magnitude > detachForceThreshhold)
+        {
+            Detach();
+        } */
+    
+
+    
+   
+     public void SplitTrain()
     {
         //do something
     }
@@ -173,15 +242,23 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart
     {
         //do something
     }
-/*
-    void OnCollisionEnter(Collision col)
+
+    public void Initialize(IGrabbable grabbable)
     {
-        Debug.Log("Function Entered");
-        if (col.gameObject.CompareTag("Cart"))
-        {
-            Debug.Log("It works!");
-            //col.gameObject.transform.parent = gameObject.transform;
-        }
+        throw new System.NotImplementedException();
+    } 
     }
-    */
-}
+
+    
+    /*
+   void OnCollisionEnter(Collision col)
+   {
+       Debug.Log("Function Entered");
+       if (col.gameObject.CompareTag("Cart"))
+       {
+           Debug.Log("It works!");
+           //col.gameObject.transform.parent = gameObject.transform;
+       }
+   }
+   */
+
