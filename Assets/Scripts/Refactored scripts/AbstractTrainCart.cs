@@ -3,11 +3,7 @@ using UnityEngine;
 using UnityEngine.Splines;
 using Unity.Mathematics;
 using System.Linq;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using Oculus.Interaction;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Unity.VisualScripting;
 using System.Collections.Generic;
 
 
@@ -15,8 +11,6 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
 {
     private ConfigurableJoint joint;
     public float detachForceThreshhold = 0.1f;
-
-    [SerializeField]
     private Grabbable grabbable;
     [SerializeField] private TrainCart prev;
     [SerializeField] private TrainCart next;
@@ -25,6 +19,8 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
     private ArrayList splines;
     private Spline[] splinesArray;
     private List<ConfigurableJoint> joints = new List<ConfigurableJoint>();
+    private Transform[] allChildren;
+    private Transform rodTransform, handTransform;
     // Start is called before the first frame update
     public void Start()
     {
@@ -32,7 +28,9 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
         Debug.Log(splinesArray[0]);
         //if den har en next: CoupleNext(next)
         //if den har en prev: CouplePrev(prev);
-        
+        allChildren = gameObject.GetComponentsInChildren<Transform>();
+        rodTransform = allChildren.FirstOrDefault(c => c.gameObject.name == "rodTransform");
+        handTransform = allChildren.FirstOrDefault(c => c.gameObject.name == "HandTransform");
         if (grabbable == null)
         {
             grabbable = GetComponent<Grabbable>();
@@ -51,6 +49,14 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
         }
         */
         AbstractTrainCart otherComponent = collision.gameObject.GetComponentInParent<AbstractTrainCart>();
+        Transform otherTransform = collision.transform;
+        float distToHand = Vector3.Distance(handTransform.position, otherTransform.position);
+        float distToRod = Vector3.Distance(rodTransform.position, otherTransform.position);
+        if (distToHand > distToRod){
+            next = otherComponent;
+        } else{
+            prev = otherComponent;
+        }
         Debug.Log("othercomp is: " + otherComponent);
         if (otherComponent != null)
         {
@@ -65,6 +71,7 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
     // Update is called once per frame
    public void Update()
 {
+    SnapCartToTrack();
     if (joints.Count > 0)
     {
         for (int i = joints.Count - 1; i >= 0; i--)
@@ -78,10 +85,10 @@ public class AbstractTrainCart : MonoBehaviour, TrainCart, ITransformer
     }
 }
 
-    public void LateUpdate()
+    /* public void LateUpdate()
     {
         SnapCartToTrack();
-    }
+    } */
 
     public void SnapCartToTrack()
     {
