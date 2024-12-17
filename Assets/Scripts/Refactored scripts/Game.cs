@@ -1,4 +1,5 @@
 using System.Linq;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -8,6 +9,7 @@ public class Game : MonoBehaviour
     public static Game INSTANCE { get; private set; }
     public SplineContainer splineContainer;
     public ConcreteTrainCart train;
+    public TextMeshPro tmp;
     private Spline[] splinesArray;
     public Spline[] GetSplinesArray()
     {
@@ -21,6 +23,10 @@ public class Game : MonoBehaviour
 
     public ConcreteTrainCart GetTrain(){
         return train;
+    }
+
+    public TextMeshPro GetTMP(){
+        return tmp;
     }
 
     private void Awake()
