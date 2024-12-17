@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class CartLinkBuilder : MonoBehaviour
 {
-    [SerializeField] public List<AbstractTrainCart> list;
+    [SerializeField] public List<ConcreteTrainCart> list;
 
 
     // Start is called before the first frame update

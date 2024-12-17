@@ -7,6 +7,7 @@ public class Game : MonoBehaviour
 {
     public static Game INSTANCE { get; private set; }
     public SplineContainer splineContainer;
+    public ConcreteTrainCart train;
     private Spline[] splinesArray;
     public Spline[] GetSplinesArray()
     {
@@ -16,6 +17,10 @@ public class Game : MonoBehaviour
     public SplineContainer GetSplineContainer()
     {
         return splineContainer;
+    }
+
+    public ConcreteTrainCart GetTrain(){
+        return train;
     }
 
     private void Awake()

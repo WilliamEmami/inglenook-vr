@@ -10,4 +10,5 @@ public interface TrainCart
     //Iterera för att kolla vilken som är next respektive prev
     public void CoupleNext(TrainCart next); //lägg till next till nuvarande traincart
     public void CouplePrev(TrainCart prev); //lägg till prev till nuvarande traincart
+    public int CountCarts(); //ska räkna hur många carts i listan
 }

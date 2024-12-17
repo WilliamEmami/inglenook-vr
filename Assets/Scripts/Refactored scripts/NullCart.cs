@@ -2,10 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NullCart : TrainCart
+public class NullCart : ConcreteTrainCart
 {
-    public void CoupleNext(TrainCart next){}
-    public void CouplePrev(TrainCart prev){}
+    public void CoupleNext(ConcreteTrainCart next){}
+    public void CouplePrev(ConcreteTrainCart prev){}
     public void SnapCartToTrack(){}
     public void SplitTrain(){}
+
+    public int CountCarts(){
+        return 0;
+    }
 }
